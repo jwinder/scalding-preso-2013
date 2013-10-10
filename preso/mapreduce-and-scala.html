@@ -1,0 +1,581 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>(MapReduce & Scala)</title>
+<meta name="author" content="(Joe Winder)"/>
+<link rel="stylesheet" href="file:///Users/jwinder/junk/reveal.js/css/reveal.min.css"/>
+<link rel="stylesheet" href="file:///Users/jwinder/junk/reveal.js/css/theme/simple.css" id="theme"/>
+<link rel="stylesheet" href="./style.css"/>
+<link rel="stylesheet" href="file:///Users/jwinder/junk/reveal.js/css/print/pdf.css" type="text/css" media="print"/>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section>
+<h1>MapReduce &amp; Scala</h1>
+<h2>Joe Winder</h2>
+<h2><a href="mailto:joe@banno.com">joe@banno.com</a></h2>
+<h2></h2></section>
+
+<section>
+<section id="sec-1" >
+
+<h2>Agenda</h2>
+<ol class="org-ol">
+<li>What is Hadoop?
+</li>
+<li>What is MapReduce?
+</li>
+<li>What is Scalding?
+</li>
+<li>Some fun examples of Scalding Jobs
+</li>
+</ol>
+</section>
+
+</section>
+<section>
+<section id="sec-2" >
+
+<h2>Hadoop</h2>
+<p>
+Hadoop is an Apache open-source framework for distributed storage &amp; processing.
+</p>
+<ul class="org-ul">
+<li class="fragment fade-in">Hadoop can store large amounts of data.
+</li>
+</ul>
+<ul class="org-ul">
+<li class="fragment fade-in">Hadoop can compute over large amounts of data.
+</li>
+</ul>
+<ul class="org-ul">
+<li class="fragment fade-in">Hadoop can distribute work to clusters of computers.
+</li>
+</ul>
+</section>
+<section id="sec-2-1" >
+
+<h3>Need some convincing?</h3>
+<ul class="org-ul">
+<li>Apache open-source
+</li>
+<li>Has a large community
+</li>
+<li>Cloudera support
+</li>
+<li>Used at Twitter, Facebook, etc.
+</li>
+</ul>
+</section>
+
+</section>
+<section>
+<section id="sec-3" >
+
+<h2>Zookeeper</h2>
+<p>
+Coorindation of work on distributed systems.
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-4" >
+
+<h2>Hadoop Hdfs</h2>
+<p>
+Hadoop Distributed File System
+</p>
+<ul class="org-ul">
+<li>Resilient against data loss.
+</li>
+<li>Replicates files to many computers in the cluster.
+</li>
+<li>Supports very large file storage by breaking files into many parts (blocks).
+</li>
+</ul>
+</section>
+<section id="sec-4-1" >
+
+<h3>Basic examples for Hdfs:</h3>
+<pre class="example">
+hadoop fs -ls /
+hadoop fs -chmod 777 /tmp
+hadoop fs -mkdir /user/banno
+hadoop fsck /
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-5" >
+
+<h2>Hadoop MapReduce</h2>
+<p>
+MapReduce is a framework for performing transformations over data stored in hdfs.
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-6" >
+
+<h2>Classical MapReduce</h2>
+<p>
+A set of input key-value pairs is transformed to a set of output key-value pairs.
+</p>
+<ul class="org-ul">
+<li class="fragment fade-in">The mapper emits intermediate key-value pairs based on the input.
+</li>
+</ul>
+<ul class="org-ul">
+<li class="fragment fade-in">The reducer emits output key-value pairs beased on the intermediate pairs&#x2013;grouped by key.
+</li>
+</ul>
+</section>
+<section id="sec-6-1" >
+
+<h3>Example: Point count MapReduce job</h3>
+</section>
+
+</section>
+<section>
+<section id="sec-7" >
+
+<h2>Cascading</h2>
+<p>
+Cascading abstracts over MapReduce, reducing its tedium.
+</p>
+<ul class="org-ul">
+<li>A cascading job flow is a source tap, a sink tap and a connecting pipe that transforms the source data.
+</li>
+<li>A connected series of flows is called a cascade.
+</li>
+</ul>
+</section>
+<section id="sec-7-1" >
+
+<h3>But Cascading doesn't really feel like Scala.</h3>
+<p>
+Example: Word count cascading flow
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-8" >
+
+<h2>Scalding</h2>
+<p>
+Scala library written by Twitter that makes it easier to implement Cascading jobs.
+</p>
+</section>
+<section id="sec-8-1" >
+
+<h3>Example: Point count scalding job</h3>
+</section>
+
+</section>
+<section>
+<section id="sec-9" >
+
+<h2>Recap so far</h2>
+<ul class="org-ul">
+<li>Hadoop Hdfs stores data
+</li>
+<li>Hadoop MapReduce computes over data
+</li>
+<li>Cascading makes MapReduce easier in Java
+</li>
+<li>Scalding makes Cascading easier in Scala
+</li>
+</ul>
+</section>
+
+</section>
+<section>
+<section id="sec-10" >
+
+<h2>Scalding Basic Terms</h2>
+<ul class="org-ul">
+<li>Source - taps in and out of data sources
+</li>
+<li>Field - models a part of your data
+</li>
+<li>RichPipe - operations to apply to Cascading pipes
+</li>
+<li>Job - defines a single cascading flow
+</li>
+<li>CascadeJob - defines a cascade of flows
+</li>
+</ul>
+</section>
+
+</section>
+<section>
+<section id="sec-11" >
+
+<h2>Scalding: Source</h2>
+<p>
+A source is a specific type of tap used for input &amp; output.
+</p>
+<pre class="example">
+TextLine("hdfs://...")
+Csv("hdfs://...", skipHeader = true)
+Tsv("hdfs://...", skipHeader = false)
+</pre>
+<p>
+&#x2026; and a lot more.
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-12" >
+
+<h2>Scalding: Fields</h2>
+<p>
+Fields are used to model meaninful parts of your data.
+Scalding uses Scala Symbols to create Cascading Fields.
+</p>
+<pre class="example">
+TextLine("hdfs://")
+  .mapTo('line -&gt; 'word) {
+    (line: String) =&gt;
+      line.split(WordRegex)
+  }
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-13" >
+
+<h2>Scalding: RichPipe</h2>
+<p>
+Adds methods to pipes for transforming their data stream.
+Examples of these later.
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-14" >
+
+<h2>Scalding: Job</h2>
+<pre class="example">
+import com.twitter.scalding._
+class MyJob extends Job(args: Args) {}
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-15" >
+
+<h2>Scalding: CascadeJob</h2>
+<pre class="example">
+import com.twitter.scalding._
+class MyCascadeJob
+extends CascadeJob(args: Args) {
+  def jobs = List(
+    new MyJob1(args),
+    new MyJob2(args)
+  )
+}
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-16" >
+
+<h2>RichPipe: map &amp; mapTo</h2>
+<pre class="example">
+p.map('line -&gt; 'point) {
+  (line: String) =&gt;
+    Point2D.parse(line)
+}
+// yields ('line, 'point) stream
+
+p.mapTo('line -&gt; 'point) {
+  (line: String) =&gt;
+    Point2D.parse(line)
+}
+// yields ('point) stream
+</pre>
+<p>
+(PointCountScalding.scala)
+</p>
+</section>
+<section id="sec-16-1" >
+
+<h3>Note!</h3>
+<p>
+The data representing by the fields only need to be serializable.
+So you can use case classes.
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-17" >
+
+<h2>RichPipe: flatMap</h2>
+<pre class="example">
+p.flatMap('line -&gt; 'point) {
+  (line: String) =&gt;
+    val pt = Point2D.parse(line)
+    for {
+      dx &lt;- -5 to 5
+      dy &lt;- -5 to 5
+    } yield pt.translate(dx, dy)
+}
+// yields ('line, 'point) stream
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-18" >
+
+<h2>RichPipe: flatMapTo</h2>
+<pre class="example">
+p.flatMapTo('line -&gt; 'point) {
+  (line: String) =&gt;
+    val pt = Point2D.parse(line)
+    for {
+      dx &lt;- -5 to 5
+      dy &lt;- -5 to 5
+    } yield pt.translate(dx, dy)
+}
+// yields ('point) stream
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-19" >
+
+<h2>RichPipe: project &amp; discard</h2>
+<pre class="example">
+p.map('line -&gt; 'point) { ... }
+ .project('point)
+
+p.map('line -&gt; 'point) { ... }
+ .discard('line)
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-20" >
+
+<h2>RichPipe: filter</h2>
+<pre class="example">
+p.filter('point) {
+  (pt: Point2D) =&gt;
+    pt.x % 2 == 0 &amp;&amp;
+    pt.y % 2 == 0
+}
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-21" >
+
+<h2>RichPipe: groupBy &amp; foldLeft</h2>
+<pre class="example">
+p.mapTo('line -&gt; ('x, 'y)) { ... }
+ .groupBy('x) { group =&gt;
+    group.foldLeft(('x, 'y) -&gt; 'sum)(0) {
+      (acc, next: (Int, Int)) =&gt;
+        acc + next._2
+    }
+ }
+// sum of y's grouped by x
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-22" >
+
+<h2>RichPipe: groupBy &amp; mapReduceMap</h2>
+<p>
+(see GroupByMapReduceMapScaldingExample)
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-23" >
+
+<h2>RichPipe: groupBy &amp; mapPlusMap</h2>
+<p>
+Same as mapReduceMap except that it looks for an implicit Monoid to reduce the data.
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-24" >
+
+<h2>RichPipe: groupBy &amp; scanLeft</h2>
+<p>
+(see GroupByScanLeftScaldingExample)
+</p>
+</section>
+
+</section>
+<section>
+<section id="sec-25" >
+
+<h2>RichPipe: groupBy &amp; beyond</h2>
+<pre class="example">
+p.groupBy('x)(_.sum('y -&gt; 'ySum))
+// looks for implicit semigroup
+
+p.groupBy('x)(_.times('y -&gt; 'yProd))
+// looks for implicit ring
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-26" >
+
+<h2>RichPipe: groupBy &amp; beyond</h2>
+<pre class="example">
+p.groupBy('x)(_.size('y -&gt; 'yCount))
+p.groupBy('x)(_.average('y -&gt; 'yAvg))
+p.groupBy('x)(_.min('y -&gt; 'yMin))
+p.groupBy('x)(_.max('y -&gt; 'yMax))
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-27" >
+
+<h2>RichPipe: groupBy &amp; beyond</h2>
+<pre class="example">
+p.groupBy('x)(_.drop(10))
+p.groupBy('x)(_.take(10))
+p.groupBy('x)(_.dropWhile('y) { ... }
+p.groupBy('x)(_.takeWhile('y) { ... }
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-28" >
+
+<h2>Running a fat job</h2>
+<pre class="example">
+yarn jar
+ \ my-fat.jar
+ \ com.twitter.scalding.Tool
+ \ path.to.job.Class
+ \ --hdfs
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-29" >
+
+<h2>Running a slim job</h2>
+<pre class="example">
+yarn jar
+ \ my-slim.jar
+ \ com.twitter.scalding.Tool
+ \ path.to.job.Class
+ \ --hdfs
+ \ -libjars /path/to/my/jars
+</pre>
+</section>
+
+</section>
+<section>
+<section id="sec-30" >
+
+<h2>DrawingTimeStats example</h2>
+<ul class="org-ul">
+<li>Average drawing time
+</li>
+<li>Min drawing time
+</li>
+<li>Max drawing time
+</li>
+</ul>
+</section>
+
+</section>
+<section>
+<section id="sec-31" >
+
+<h2>Quick mentions</h2>
+<ul class="org-ul">
+<li><a href="https://github.com/mesos/spark">https://github.com/mesos/spark</a>
+</li>
+<li><a href="https://github.com/nathanmarz/storm">https://github.com/nathanmarz/storm</a>
+</li>
+<li><a href="https://github.com/twitter/summingbird">https://github.com/twitter/summingbird</a>
+</li>
+</ul>
+</section>
+
+</section>
+<section>
+<section id="sec-32" >
+
+<h2>Questions</h2>
+</section>
+</section>
+</div>
+</div>
+<script src="file:///Users/jwinder/junk/reveal.js/lib/js/head.min.js"></script>
+<script src="file:///Users/jwinder/junk/reveal.js/js/reveal.min.js"></script>
+<script>
+
+        		// Full list of configuration options available here:
+        		// https://github.com/hakimel/reveal.js#configuration
+        		Reveal.initialize({
+        			controls: true,
+        			progress: true,
+        			history: true,
+        			center: true,
+        			rollingLinks: true,
+        			keyboard: true,
+        			overview: true,
+        			 // slide width
+        			 // slide height
+        			margin: 0.10, // slide margin
+        			minScale: 0.50, // slide minimum scaling factor
+        			maxScale: 2.50, // slide maximum scaling factor
+
+
+        			theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+        			transition: Reveal.getQueryHash().transition || 'concave', // default/cube/page/concave/zoom/linear/fade/none
+        			transitionSpeed: 'default',
+
+        			// Optional libraries used to extend on reveal.js
+        			dependencies: [
+        				{ src: 'file:///Users/jwinder/junk/reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+        				{ src: 'file:///Users/jwinder/junk/reveal.js/plugin/markdown/showdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+        				{ src: 'file:///Users/jwinder/junk/reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+        				{ src: 'file:///Users/jwinder/junk/reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+        				{ src: 'file:///Users/jwinder/junk/reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+        				{ src: 'file:///Users/jwinder/junk/reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+        				// { src: 'file:///Users/jwinder/junk/reveal.js/plugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }
+        				// { src: 'file:///Users/jwinder/junk/reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+        			]
+        		});
+</script>
+</body>
+</html>

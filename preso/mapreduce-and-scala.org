@@ -1,0 +1,234 @@
+#+Title: MapReduce & Scala
+#+Author: Joe Winder
+#+Email: joe@banno.com
+#+REVEAL_THEME: simple
+#+OPTIONS: reveal_progress, reveal_center toc:nil num:nil
+#+REVEAL_MARGIN: 0.1
+#+REVEAL_MIN_SCALE: 0.5
+#+REVEAL_MAX_SCALE: 2.5
+#+REVEAL_TRANS: concave
+#+REVEAL_THEME: simple
+#+REVEAL_HLEVEL: 1
+#+REVEAL_EXTRA_CSS: style.css
+
+* Agenda
+1. What is Hadoop?
+2. What is MapReduce?
+3. What is Scalding?
+4. Some fun examples of Scalding Jobs
+* Hadoop
+Hadoop is an Apache open-source framework for distributed storage & processing.
+#+ATTR_REVEAL: :frag fade-in
+- Hadoop can store large amounts of data.
+#+ATTR_REVEAL: :frag fade-in
+- Hadoop can compute over large amounts of data.
+#+ATTR_REVEAL: :frag fade-in
+- Hadoop can distribute work to clusters of computers.
+** Need some convincing?
+- Apache open-source
+- Has a large community
+- Cloudera support
+- Used at Twitter, Facebook, etc.
+* Zookeeper
+Coorindation of work on distributed systems.
+* Hadoop Hdfs
+Hadoop Distributed File System
+- Resilient against data loss.
+- Replicates files to many computers in the cluster.
+- Supports very large file storage by breaking files into many parts (blocks).
+** Basic examples for Hdfs:
+#+BEGIN_SRC
+hadoop fs -ls /
+hadoop fs -chmod 777 /tmp
+hadoop fs -mkdir /user/banno
+hadoop fsck /
+#+END_SRC
+* Hadoop MapReduce
+MapReduce is a framework for performing transformations over data stored in hdfs.
+* Classical MapReduce
+A set of input key-value pairs is transformed to a set of output key-value pairs.
+#+ATTR_REVEAL: :frag fade-in
+- The mapper emits intermediate key-value pairs based on the input.
+#+ATTR_REVEAL: :frag fade-in
+- The reducer emits output key-value pairs beased on the intermediate pairs--grouped by key.
+** Example: Point count MapReduce job
+* Cascading
+Cascading abstracts over MapReduce, reducing its tedium.
+- A cascading job flow is a source tap, a sink tap and a connecting pipe that transforms the source data.
+- A connected series of flows is called a cascade.
+** But Cascading doesn't really feel like Scala.
+   Example: Word count cascading flow
+* Scalding
+Scala library written by Twitter that makes it easier to implement Cascading jobs.
+** Example: Point count scalding job
+* Recap so far
+- Hadoop Hdfs stores data
+- Hadoop MapReduce computes over data
+- Cascading makes MapReduce easier in Java
+- Scalding makes Cascading easier in Scala
+* Scalding Basic Terms
+- Source - taps in and out of data sources
+- Field - models a part of your data
+- RichPipe - operations to apply to Cascading pipes
+- Job - defines a single cascading flow
+- CascadeJob - defines a cascade of flows
+* Scalding: Source
+A source is a specific type of tap used for input & output.
+#+BEGIN_SRC
+TextLine("hdfs://...")
+Csv("hdfs://...", skipHeader = true)
+Tsv("hdfs://...", skipHeader = false)
+#+END_SRC
+... and a lot more.
+* Scalding: Fields
+Fields are used to model meaninful parts of your data.
+Scalding uses Scala Symbols to create Cascading Fields.
+#+BEGIN_SRC
+TextLine("hdfs://")
+  .mapTo('line -> 'word) {
+    (line: String) =>
+      line.split(WordRegex)
+  }
+#+END_SRC
+* Scalding: RichPipe
+Adds methods to pipes for transforming their data stream.
+Examples of these later.
+* Scalding: Job
+#+BEGIN_SRC
+import com.twitter.scalding._
+class MyJob extends Job(args: Args) {}
+#+END_SRC
+* Scalding: CascadeJob
+#+BEGIN_SRC
+import com.twitter.scalding._
+class MyCascadeJob
+extends CascadeJob(args: Args) {
+  def jobs = List(
+    new MyJob1(args),
+    new MyJob2(args)
+  )
+}
+#+END_SRC
+* RichPipe: map & mapTo
+#+BEGIN_SRC
+p.map('line -> 'point) {
+  (line: String) =>
+    Point2D.parse(line)
+}
+// yields ('line, 'point) stream
+
+p.mapTo('line -> 'point) {
+  (line: String) =>
+    Point2D.parse(line)
+}
+// yields ('point) stream
+#+END_SRC
+(PointCountScalding.scala)
+** Note!
+The data representing by the fields only need to be serializable.
+So you can use case classes.
+* RichPipe: flatMap
+#+BEGIN_SRC
+p.flatMap('line -> 'point) {
+  (line: String) =>
+    val pt = Point2D.parse(line)
+    for {
+      dx <- -5 to 5
+      dy <- -5 to 5
+    } yield pt.translate(dx, dy)
+}
+// yields ('line, 'point) stream
+#+END_SRC
+* RichPipe: flatMapTo
+#+BEGIN_SRC
+p.flatMapTo('line -> 'point) {
+  (line: String) =>
+    val pt = Point2D.parse(line)
+    for {
+      dx <- -5 to 5
+      dy <- -5 to 5
+    } yield pt.translate(dx, dy)
+}
+// yields ('point) stream
+#+END_SRC
+* RichPipe: project & discard
+#+BEGIN_SRC
+p.map('line -> 'point) { ... }
+ .project('point)
+
+p.map('line -> 'point) { ... }
+ .discard('line)
+#+END_SRC
+* RichPipe: filter
+#+BEGIN_SRC
+p.filter('point) {
+  (pt: Point2D) =>
+    pt.x % 2 == 0 &&
+    pt.y % 2 == 0
+}
+#+END_SRC
+* RichPipe: groupBy & foldLeft
+#+BEGIN_SRC
+p.mapTo('line -> ('x, 'y)) { ... }
+ .groupBy('x) { group =>
+    group.foldLeft(('x, 'y) -> 'sum)(0) {
+      (acc, next: (Int, Int)) =>
+        acc + next._2
+    }
+ }
+// sum of y's grouped by x
+#+END_SRC
+* RichPipe: groupBy & mapReduceMap
+(see GroupByMapReduceMapScaldingExample)
+* RichPipe: groupBy & mapPlusMap
+Same as mapReduceMap except that it looks for an implicit Monoid to reduce the data.
+* RichPipe: groupBy & scanLeft
+(see GroupByScanLeftScaldingExample)
+* RichPipe: groupBy & beyond
+#+BEGIN_SRC
+p.groupBy('x)(_.sum('y -> 'ySum))
+// looks for implicit semigroup
+
+p.groupBy('x)(_.times('y -> 'yProd))
+// looks for implicit ring
+#+END_SRC
+* RichPipe: groupBy & beyond
+#+BEGIN_SRC
+p.groupBy('x)(_.size('y -> 'yCount))
+p.groupBy('x)(_.average('y -> 'yAvg))
+p.groupBy('x)(_.min('y -> 'yMin))
+p.groupBy('x)(_.max('y -> 'yMax))
+#+END_SRC
+* RichPipe: groupBy & beyond
+#+BEGIN_SRC
+p.groupBy('x)(_.drop(10))
+p.groupBy('x)(_.take(10))
+p.groupBy('x)(_.dropWhile('y) { ... }
+p.groupBy('x)(_.takeWhile('y) { ... }
+#+END_SRC
+* Running a fat job
+#+BEGIN_SRC
+yarn jar
+ \ my-fat.jar
+ \ com.twitter.scalding.Tool
+ \ path.to.job.Class
+ \ --hdfs
+#+END_SRC
+* Running a slim job
+#+BEGIN_SRC
+yarn jar
+ \ my-slim.jar
+ \ com.twitter.scalding.Tool
+ \ path.to.job.Class
+ \ --hdfs
+ \ -libjars /path/to/my/jars
+#+END_SRC
+* DrawingTimeStats example
+- Average drawing time
+- Min drawing time
+- Max drawing time
+* Quick mentions
+- https://github.com/mesos/spark
+- https://github.com/nathanmarz/storm
+- https://github.com/twitter/summingbird
+* Questions
